@@ -1,15 +1,4 @@
-
-// =================================================================================================
-//
-//	Beak
-//	Copyright 2014 Etaminstudio, Alan Langlois. All Rights Reserved.
-//
-//	This program is free software. You can redistribute and/or modify it
-//	in accordance with the terms of the accompanying license agreement.
-//
-// =================================================================================================
-
-package beak.text
+package beak.text 
 {
 	import flash.display.BitmapData;
 	import flash.geom.Matrix;
@@ -21,17 +10,17 @@ package beak.text
 	import starling.core.Starling;
 	import starling.display.Image;
 	import starling.display.Sprite;
+	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
 	import starling.textures.Texture;
 	/**
 	 * ...
-	 * @author Alan Langlois - Etamin Studio
+	 * @author Alan Langlois - ES
 	 */
 	public class HTMLTextfield extends Sprite
 	{
-		
 		private static const HELPER_POINT:Point = new Point();
 		
 		private var _textfield:TextField;
@@ -48,17 +37,24 @@ package beak.text
 		private var _onClickDefinitionCB:Function;
 		private var _autoSize:String;
 		
-		public function HTMLTextfield( onClickDefinitionCB:Function = null) 
+		public function HTMLTextfield( onClickDefinitionCB:Function ) 
 		{
+			this.addEventListener(Event.ADDED_TO_STAGE, _onAddedToStage);						
 			this.onClickDefinitionCB = onClickDefinitionCB;
 			
 			_scale = Starling.contentScaleFactor;
 			_textfield = new TextField();			
 			
 			antiAliasType = AntiAliasType.ADVANCED;
-			//autoSize = TextFieldAutoSize.CENTER;
+			autoSize = TextFieldAutoSize.LEFT;
 			
 			this.addEventListener(TouchEvent.TOUCH, _touchHandler);
+			
+		}
+		
+		private function _onAddedToStage(e:Event):void 
+		{
+			removeEventListener(Event.ADDED_TO_STAGE, _onAddedToStage);
 			
 		}
 		
@@ -147,11 +143,13 @@ package beak.text
 					{
 						if (lastHTMLContent != null)
 							trace("+++++++> 1 " + lastHTMLContent + " -- " + lastHTMLContent.search(/^dfn\s+/));
+						//hideElements();
 						return;
 					}
 					var linkStartIndex:int = lastHTMLContent.search(/title=[\"\']/) + 6;
 					if (linkStartIndex < 2)
 					{
+						//hideElements();
 						return;
 					}
 					
@@ -162,6 +160,7 @@ package beak.text
 						linkEndIndex = lastHTMLContent.indexOf("'", linkStartIndex + 1);
 						if (linkEndIndex < 0)
 						{
+							//hideElements();
 							return;
 						}
 					}
@@ -178,14 +177,24 @@ package beak.text
             bitmapData.draw(_textfield, new Matrix());
 			
 			if ( _snapshot != null ) {
+				_snapshot.removeEventListener(Event.ADDED_TO_STAGE, _snapshotHandler);
 				removeChild( _snapshot );
 				_snapshot.dispose();
 				_snapshot = null;
 			}
 			
 			_snapshot = new Image( Texture.fromBitmapData(bitmapData, false, false, _scale) );
+			_snapshot.addEventListener( Event.ADDED_TO_STAGE, _snapshotHandler);
 			bitmapData = null;
 			addChild( _snapshot );
+		}
+		
+		private function _snapshotHandler(e:Event):void 
+		{
+			trace( "_snapshotHandler : " + this.height );
+			_snapshot.removeEventListener(Event.ADDED_TO_STAGE, _snapshotHandler);
+			_height = _snapshot.height;
+			this.dispatchEventWith( Event.CHANGE );
 		}
 		
 		
@@ -286,12 +295,43 @@ package beak.text
 			_onClickDefinitionCB = value;
 		}
 		
+		public function getCharWidth(index:int):Number
+		{
+			return _textfield.getCharBoundaries(index).width / _scale;
+		}
+		
+		public function getCharHeight(index:int):Number
+		{
+			
+			return _textfield.getCharBoundaries(index).height / _scale;
+		}
+		
+		public function measureText(result:Point = null):Point
+		{
+			if(!result)
+			{
+				result = new Point();
+			}
+			
+			if(_textfield)
+			{
+				result.x = _width;
+				result.y = _height;
+				return result;
+			}
+			
+			return result;
+			
+		}
+		
 		
 		override public function dispose():void 
 		{
+			this.removeEventListeners( Event.CHANGE );
 			this.removeEventListener(TouchEvent.TOUCH, _touchHandler);
 			super.dispose();
 		}
+		
 	}
 
 }
