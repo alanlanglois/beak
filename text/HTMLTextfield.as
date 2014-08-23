@@ -36,6 +36,11 @@ package beak.text
 		private var _antiAliasType:String;
 		private var _onClickDefinitionCB:Function;
 		private var _autoSize:String;
+		private var _displayAsPassword:Boolean;
+		private var _filters:Array;
+		private var _condenseWhite:Boolean;
+		private var _textColor:uint;
+		private var _isAddedToStage:Boolean;
 		
 		public function HTMLTextfield( onClickDefinitionCB:Function ) 
 		{
@@ -55,7 +60,8 @@ package beak.text
 		private function _onAddedToStage(e:Event):void 
 		{
 			removeEventListener(Event.ADDED_TO_STAGE, _onAddedToStage);
-			
+			_isAddedToStage = true;
+			draw();
 		}
 		
 		private function _touchHandler(e:TouchEvent):void 
@@ -172,7 +178,8 @@ package beak.text
 		}
 		
 		public function draw():void
-		{			
+		{	
+			if( !_isAddedToStage ) return;
 			var bitmapData:BitmapData = new BitmapData(_textfield.width, _textfield.height, true, 0x0);
             bitmapData.draw(_textfield, new Matrix());
 			
@@ -214,6 +221,7 @@ package beak.text
 		{
 			value.size = Object( Number(value.size) * _scale );
 			value.leading = Object( Number(value.leading) * _scale );
+			_textColor = uint( value.color );
 			_textFormat = value;
 			_textfield.defaultTextFormat = _textFormat;
 			draw();
@@ -268,6 +276,42 @@ package beak.text
 			_textfield.embedFonts = value;
 			draw();
 		}
+		
+		public function get displayAsPassword():Boolean { return _displayAsPassword; }
+		
+		public function set displayAsPassword( value:Boolean ):void { 
+			_displayAsPassword = value; 
+			_textfield.displayAsPassword = value;
+			draw();
+		}
+		
+		public function get filters():Array { return _filters; }
+		
+		public function set filters( value:Array ):void { 
+			_filters = value; 
+			_textfield.filters = value;
+			draw();
+		}
+		
+		public function get condenseWhite():Boolean { return _condenseWhite; }
+		
+		public function set condenseWhite( value:Boolean ):void { 
+			_condenseWhite = value; 
+			_textfield.condenseWhite = value;
+			draw();
+		}
+		
+		public function get length():int { return _textfield.length; }
+		
+		
+		public function get textColor():uint { return _textColor; }
+		
+		public function set textColor( value:uint ):void { 
+			_textColor = value; 
+			_textfield.textColor = value;
+			draw();
+		}
+		
 		
 		public function get wordWrap():Boolean { return _wordWrap; }
 		
