@@ -48,7 +48,7 @@ package beak.text
 		private var _onClickDefinitionCB:Function;
 		private var _autoSize:String;
 		
-		public function HTMLTextfield( onClickDefinitionCB:Function ) 
+		public function HTMLTextfield( onClickDefinitionCB:Function = null) 
 		{
 			this.onClickDefinitionCB = onClickDefinitionCB;
 			
