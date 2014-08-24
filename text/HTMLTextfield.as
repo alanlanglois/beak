@@ -1,3 +1,13 @@
+// =================================================================================================
+//
+//	Beak
+//	Copyright 2014 Etamin Studio. All Rights Reserved.
+//
+//	This program is free software. You can redistribute and/or modify it
+//	in accordance with the terms of the accompanying license agreement.
+//
+// =================================================================================================
+
 package beak.text 
 {
 	import flash.display.BitmapData;
@@ -17,7 +27,7 @@ package beak.text
 	import starling.textures.Texture;
 	/**
 	 * ...
-	 * @author Alan Langlois - ES
+	 * @author Alan Langlois - Etamin Studio
 	 */
 	public class HTMLTextfield extends Sprite
 	{
