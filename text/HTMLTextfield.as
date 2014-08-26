@@ -10,9 +10,11 @@
 
 package beak.text 
 {
+	import starling.display.DisplayObject;
 	import flash.display.BitmapData;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	import flash.text.AntiAliasType;
 	import flash.text.TextField;
 	import flash.text.TextFieldAutoSize;
@@ -63,15 +65,24 @@ package beak.text
 			antiAliasType = AntiAliasType.ADVANCED;
 			autoSize = TextFieldAutoSize.LEFT;
 			
-			this.addEventListener(TouchEvent.TOUCH, _touchHandler);
 			
 		}
 		
 		private function _onAddedToStage(e:Event):void 
 		{
 			removeEventListener(Event.ADDED_TO_STAGE, _onAddedToStage);
+			this.addEventListener(Event.REMOVED_FROM_STAGE, _onRemovedFromStage);						
+
+			stage.addEventListener(TouchEvent.TOUCH, _touchHandler);
+			
 			_isAddedToStage = true;
 			draw();
+		}
+		
+		private function _onRemovedFromStage(e:Event):void 
+		{
+			removeEventListener(Event.REMOVED_FROM_STAGE, _onRemovedFromStage);
+			stage.removeEventListener(TouchEvent.TOUCH, _touchHandler);			
 		}
 		
 		private function _touchHandler(e:TouchEvent):void 
@@ -79,6 +90,11 @@ package beak.text
 			var touch:Touch = e.getTouch(stage);
 			
 			if (!touch) return;
+			
+			if (touch.phase == TouchPhase.BEGAN)
+			{
+				if( onClickDefinitionCB != null ) onClickDefinitionCB( null, "");
+			}
 			
 			if (touch.phase == TouchPhase.ENDED)
 			{
@@ -348,6 +364,14 @@ package beak.text
 		{
 			_onClickDefinitionCB = value;
 		}
+		
+		public function getCharBoundaries(index):Rectangle
+		{
+			var rect:Rectangle = _textfield.getCharBoundaries(index);
+			return new Rectangle( rect.x / _scale, rect.y / _scale, rect.width / _scale, rect.height / _scale );
+		}
+		
+		public
 		
 		public function getCharWidth(index:int):Number
 		{
