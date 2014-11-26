@@ -95,7 +95,6 @@ package beak.text
 			if (!touch) return;
 			if (touch.phase == TouchPhase.BEGAN)
 			{
-				onClickDefinitionCB( null, "");
 			}
 			else if (touch.phase == TouchPhase.ENDED)
 			{
@@ -181,13 +180,11 @@ package beak.text
 						{
 							if (lastHTMLContent != null)
 								trace("+++++++> 1 " + lastHTMLContent + " -- " + lastHTMLContent.search(/^dfn\s+/));
-							onClickDefinitionCB( null, "");
 							return;
 						}
 						var linkStartIndex:int = lastHTMLContent.search(/title=[\"\']/) + 6;
 						if (linkStartIndex < 2)
 						{
-							onClickDefinitionCB( null, "");
 							return;
 						}
 						
@@ -198,7 +195,6 @@ package beak.text
 							linkEndIndex = lastHTMLContent.indexOf("'", linkStartIndex + 1);
 							if (linkEndIndex < 0)
 							{
-								onClickDefinitionCB( null, "");
 								return;
 							}
 						}
