@@ -10,12 +10,16 @@
 
 package beak.text 
 {
-	import starling.display.DisplayObject;
 	import flash.display.BitmapData;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	import flash.net.navigateToURL;
+	import flash.net.sendToURL;
+	import flash.net.URLRequest;
 	import flash.text.AntiAliasType;
+	import flash.text.FontStyle;
+	import flash.text.StyleSheet;
 	import flash.text.TextField;
 	import flash.text.TextFieldAutoSize;
 	import flash.text.TextFormat;
@@ -29,7 +33,7 @@ package beak.text
 	import starling.textures.Texture;
 	/**
 	 * ...
-	 * @author Alan Langlois - Etamin Studio
+	 * @author Alan Langlois - ES
 	 */
 	public class HTMLTextfield extends Sprite
 	{
@@ -41,7 +45,7 @@ package beak.text
 		private var _width:int;
 		private var _height:int;
 		private var _scale:Number;
-		private var _snapshot:Image;
+		private var _snapshots:Vector.<Image>;
 		private var _multiline:Boolean;
 		private var _embedFonts:Boolean;
 		private var _wordWrap:Boolean;
@@ -53,6 +57,7 @@ package beak.text
 		private var _condenseWhite:Boolean;
 		private var _textColor:uint;
 		private var _isAddedToStage:Boolean;
+		private var _textStyleSheet:StyleSheet;
 		
 		public function HTMLTextfield( onClickDefinitionCB:Function ) 
 		{
@@ -71,10 +76,8 @@ package beak.text
 		private function _onAddedToStage(e:Event):void 
 		{
 			removeEventListener(Event.ADDED_TO_STAGE, _onAddedToStage);
-			this.addEventListener(Event.REMOVED_FROM_STAGE, _onRemovedFromStage);						
-
+			addEventListener(Event.REMOVED_FROM_STAGE, _onRemovedFromStage);
 			stage.addEventListener(TouchEvent.TOUCH, _touchHandler);
-			
 			_isAddedToStage = true;
 			draw();
 		}
@@ -82,7 +85,7 @@ package beak.text
 		private function _onRemovedFromStage(e:Event):void 
 		{
 			removeEventListener(Event.REMOVED_FROM_STAGE, _onRemovedFromStage);
-			stage.removeEventListener(TouchEvent.TOUCH, _touchHandler);			
+			stage.removeEventListener(TouchEvent.TOUCH, _touchHandler);
 		}
 		
 		private function _touchHandler(e:TouchEvent):void 
@@ -90,115 +93,125 @@ package beak.text
 			var touch:Touch = e.getTouch(stage);
 			
 			if (!touch) return;
-			
 			if (touch.phase == TouchPhase.BEGAN)
 			{
-				if( onClickDefinitionCB != null ) onClickDefinitionCB( null, "");
+				onClickDefinitionCB( null, "");
 			}
-			
-			if (touch.phase == TouchPhase.ENDED)
+			else if (touch.phase == TouchPhase.ENDED)
 			{
 				
-				if (touch.target == _snapshot)
-				{
+				var snapShot:Image;
+				
+				for ( var i:int = 0 ; i < _snapshots.length ; i++ ) {
 					
-					touch.getLocation(this, HELPER_POINT);
+					snapShot = _snapshots[i];
 					
-					var charIndex:int = _textfield.getCharIndexAtPoint(HELPER_POINT.x * _scale, HELPER_POINT.y * _scale);
-					
-					var htmlCharIndex:int = -1;
-					var htmlText:String = _text;
-					
-					var regularText:String = _textfield.text;
-					var htmlTextLength:int = htmlText.length;
-					var lastHTMLContent:String;
-					
-					var _isHTML:Boolean;
-					
-					var testVec:Vector.<int> = new Vector.<int>();
-					
-					var skipLength:int = 0;
-					var isHTML:Boolean;
-					var isHTMLSpecial:Boolean;
-					
-					var htmlIndex:int = 0;
-					var skipTo:int;
-					
-					for (var j:int = 0; j < htmlTextLength; j++)
-					{
+					if (touch.target == snapShot){
 						
-						if (htmlIndex == charIndex + 1)
+						touch.getLocation(this, HELPER_POINT);
+						
+						var charIndex:int = _textfield.getCharIndexAtPoint(HELPER_POINT.x * _scale, HELPER_POINT.y * _scale);
+						
+						var htmlCharIndex:int = -1;
+						var htmlText:String = _text;
+						
+						var regularText:String = _textfield.text;
+						var htmlTextLength:int = htmlText.length;
+						var lastHTMLContent:String;
+						
+						var _isHTML:Boolean;
+						
+						var testVec:Vector.<int> = new Vector.<int>();
+						
+						var skipLength:int = 0;
+						var isHTML:Boolean;
+						var isHTMLSpecial:Boolean;
+						
+						var htmlIndex:int = 0;
+						var skipTo:int;
+						
+						for (var j:int = 0; j < htmlTextLength; j++)
 						{
-							break;
-						}
-						var htmlChar:String = htmlText.charAt(j);
-						
-						
-						if (isHTML)
-						{
-							skipLength++;
 							
-							if (htmlChar == ">")
+							if (htmlIndex == charIndex + 1)
 							{
-								isHTML = false;
+								break;
 							}
-							else if (isHTMLSpecial && htmlChar == ";")
+							var htmlChar:String = htmlText.charAt(j);
+							
+							
+							if (isHTML)
 							{
-								isHTML = false;
-								isHTMLSpecial = false;
+								skipLength++;
+								
+								if (htmlChar == ">")
+								{
+									isHTML = false;
+								}
+								else if (isHTMLSpecial && htmlChar == ";")
+								{
+									isHTML = false;
+									isHTMLSpecial = false;
+								}
 							}
-						}
-						else if (htmlChar == "<")
-						{
-							skipLength++;
-							skipTo = htmlText.indexOf(">", j);
-							lastHTMLContent = htmlText.substr(j + 1, skipTo - j - 1);
-							if (lastHTMLContent == "br")
+							else if (htmlChar == "<")
+							{
+								skipLength++;
+								skipTo = htmlText.indexOf(">", j);
+								lastHTMLContent = htmlText.substr(j + 1, skipTo - j - 1);
+								if (lastHTMLContent == "br")
+								{
+									htmlIndex++;
+								}
+								isHTML = true;
+							}
+							else if (htmlChar == "&")
+							{
+								isHTML = true;
+								isHTMLSpecial = true;
+							}
+							else
 							{
 								htmlIndex++;
 							}
-							isHTML = true;
 						}
-						else if (htmlChar == "&")
+						htmlCharIndex = skipLength - 1;
+						
+						if (!lastHTMLContent || lastHTMLContent.search(/^dfn\s+/) != 0)
 						{
-							isHTML = true;
-							isHTMLSpecial = true;
-						}
-						else
-						{
-							htmlIndex++;
-						}
-					}
-					htmlCharIndex = skipLength - 1;
-					
-					if (!lastHTMLContent || lastHTMLContent.search(/^dfn\s+/) != 0)
-					{
-						if (lastHTMLContent != null)
-							trace("+++++++> 1 " + lastHTMLContent + " -- " + lastHTMLContent.search(/^dfn\s+/));
-						//hideElements();
-						return;
-					}
-					var linkStartIndex:int = lastHTMLContent.search(/title=[\"\']/) + 6;
-					if (linkStartIndex < 2)
-					{
-						//hideElements();
-						return;
-					}
-					
-					//
-					var linkEndIndex:int = lastHTMLContent.indexOf("\"", linkStartIndex + 1);
-					if (linkEndIndex < 0)
-					{
-						linkEndIndex = lastHTMLContent.indexOf("'", linkStartIndex + 1);
-						if (linkEndIndex < 0)
-						{
-							//hideElements();
+							if (lastHTMLContent != null)
+								trace("+++++++> 1 " + lastHTMLContent + " -- " + lastHTMLContent.search(/^dfn\s+/));
+							onClickDefinitionCB( null, "");
 							return;
 						}
-					}
-					
-					var def:String = lastHTMLContent.substr(linkStartIndex + 1, linkEndIndex - linkStartIndex - 1);
-					if( onClickDefinitionCB != null ) onClickDefinitionCB( new Point( HELPER_POINT.x, int(_textfield.getCharBoundaries(charIndex).y / _scale)),  def );
+						var linkStartIndex:int = lastHTMLContent.search(/title=[\"\']/) + 6;
+						if (linkStartIndex < 2)
+						{
+							onClickDefinitionCB( null, "");
+							return;
+						}
+						
+						//
+						var linkEndIndex:int = lastHTMLContent.indexOf("\"", linkStartIndex + 1);
+						if (linkEndIndex < 0)
+						{
+							linkEndIndex = lastHTMLContent.indexOf("'", linkStartIndex + 1);
+							if (linkEndIndex < 0)
+							{
+								onClickDefinitionCB( null, "");
+								return;
+							}
+						}
+						
+						var def:String = lastHTMLContent.substr(linkStartIndex + 1, linkEndIndex - linkStartIndex - 1);
+						
+						if (  def.indexOf( "http://" ) != -1 || def.indexOf( "mailto:" ) != -1) {
+							navigateToURL(new URLRequest( def ))
+							return;
+						}
+						
+						if( onClickDefinitionCB != null ) onClickDefinitionCB( new Point( HELPER_POINT.x, int(_textfield.getCharBoundaries(charIndex).y / _scale)),  def );
+					}	
 				}
 			}
 		}
@@ -209,24 +222,53 @@ package beak.text
 			var bitmapData:BitmapData = new BitmapData(_textfield.width, _textfield.height, true, 0x0);
             bitmapData.draw(_textfield, new Matrix());
 			
-			if ( _snapshot != null ) {
-				_snapshot.removeEventListener(Event.ADDED_TO_STAGE, _snapshotHandler);
-				removeChild( _snapshot );
-				_snapshot.dispose();
-				_snapshot = null;
+			var snapshot:Image;
+			var i:int = 0
+			if ( _snapshots != null ) {
+				for (  i = 0 ; i < _snapshots.length ; i++ ) {
+					snapshot = _snapshots[i];
+					snapshot.removeEventListener(Event.ADDED_TO_STAGE, _snapshotHandler);
+					removeChild( snapshot );
+					snapshot.dispose();
+					snapshot = null;
+				}
+				_snapshots = null;
 			}
 			
-			_snapshot = new Image( Texture.fromBitmapData(bitmapData, false, false, _scale) );
-			_snapshot.addEventListener( Event.ADDED_TO_STAGE, _snapshotHandler);
+			_snapshots = new Vector.<Image>();
+			
+			var sizeTemp:int = 2048;
+			var stamp:BitmapData;
+			var nbBmp:int = Math.ceil( bitmapData.height / sizeTemp );
+			var h:int = bitmapData.height;
+			
+			for ( i = 0 ; i < nbBmp ; i++ ) {			
+				
+				var bmpH:int = ( h > sizeTemp ) ? sizeTemp : h;
+				h -= bmpH;
+				
+				stamp = new BitmapData( bitmapData.width, bmpH, true );
+				
+				stamp.copyPixels( bitmapData, new Rectangle( 0, sizeTemp * i, bitmapData.width, bmpH ), new Point());
+				snapshot = new Image( Texture.fromBitmapData(stamp, false, false, _scale) );
+				snapshot.addEventListener( Event.ADDED_TO_STAGE, _snapshotHandler);
+				snapshot.y = (sizeTemp / _scale) * i;
+				addChild( snapshot );
+				_snapshots.push( snapshot );
+				
+				stamp.dispose();
+				stamp = null;
+			}
+			
+			bitmapData.dispose();
 			bitmapData = null;
-			addChild( _snapshot );
+			
 		}
 		
 		private function _snapshotHandler(e:Event):void 
 		{
-			trace( "_snapshotHandler : " + this.height );
-			_snapshot.removeEventListener(Event.ADDED_TO_STAGE, _snapshotHandler);
-			_height = _snapshot.height;
+			e.currentTarget.removeEventListener(Event.ADDED_TO_STAGE, _snapshotHandler);
+			if( e.currentTarget is Image )	_height += Image( e.currentTarget).height;
 			this.dispatchEventWith( Event.CHANGE );
 		}
 		
@@ -251,6 +293,17 @@ package beak.text
 			_textFormat = value;
 			_textfield.defaultTextFormat = _textFormat;
 			draw();
+		}
+		
+		public function get styleSheet():StyleSheet
+		{
+			return _textStyleSheet;
+		}
+		
+		public function set styleSheet( value:StyleSheet ):void
+		{
+			_textStyleSheet = value;
+			_textfield.styleSheet = value;
 		}
 		
 		public function get autoSize(): String{ return _autoSize; }
@@ -300,6 +353,7 @@ package beak.text
 		public function set embedFonts( value:Boolean ):void { 
 			_embedFonts = value; 
 			_textfield.embedFonts = value;
+			
 			draw();
 		}
 		
@@ -365,14 +419,6 @@ package beak.text
 			_onClickDefinitionCB = value;
 		}
 		
-		public function getCharBoundaries(index):Rectangle
-		{
-			var rect:Rectangle = _textfield.getCharBoundaries(index);
-			return new Rectangle( rect.x / _scale, rect.y / _scale, rect.width / _scale, rect.height / _scale );
-		}
-		
-		public
-		
 		public function getCharWidth(index:int):Number
 		{
 			return _textfield.getCharBoundaries(index).width / _scale;
@@ -405,11 +451,23 @@ package beak.text
 		
 		override public function dispose():void 
 		{
+			var img:Image;
+			for ( var i:int = 0 ; i < _snapshots.length ; i ++ ) {
+				img = _snapshots[i];
+				img.texture.dispose(); 
+				img.dispose();
+				img = null;
+			}
+			
+			if ( _textFormat ) _textFormat = null;
+			
+			_snapshots = null;
+			
 			this.removeEventListeners( Event.CHANGE );
-			this.removeEventListener(TouchEvent.TOUCH, _touchHandler);
 			super.dispose();
 		}
 		
 	}
+
 
 }
